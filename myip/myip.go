@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
+	"os"
 	"net"
 	"net/http"
 	"strings"
@@ -29,6 +30,15 @@ func PublicIPv4() string {
 
 	return ip
 }
+
+func Hostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return ""
+	}
+	return strings.Join(strings.Split(hostname, ".")[:2], ".");
+}
+
 
 func IsEC2() bool {
 	data, err := ioutil.ReadFile("/sys/hypervisor/uuid")

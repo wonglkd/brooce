@@ -6,7 +6,7 @@ var mainPageTpl = `
 <div class="row">
   <div class="col-md-8">
     <h3>Queues</h3>
-    <table class="table">
+    <table class="table sortable">
       <thead>
         <tr>
           <th class="queuename">Queue</th>
@@ -40,13 +40,17 @@ var mainPageTpl = `
 <div class="row">
   <div class="col-md-12">
     <h3>{{ len .RunningWorkers }} Workers Alive</h3>
-    <table class="table">
+    <table class="table sortable">
       <thead>
         <tr>
           <th>Worker Name</th>
           <th>Machine Name</th>
           <th>Machine IP</th>
+          <th>Running</th>
+          <th>Memory</th>
+          <th>CPU</th>
           <th>Process ID</th>
+          <th>HighLoad</th>
           <th>Queues</th>
         </tr>
       </thead>
@@ -56,7 +60,11 @@ var mainPageTpl = `
             <td>{{ $Worker.ProcName }}</td>
             <td>{{ $Worker.Hostname }}</td>
             <td>{{ $Worker.IP }}</td>
+            <td>{{ $Worker.Running }}</td>
+            <td>{{ $Worker.MemUsage }}%</td>
+            <td>{{ $Worker.CpuUsage }}%</td>
             <td>{{ $Worker.PID }}</td>
+            <td>{{ $Worker.HighLoad }}</td>
             <td>
               {{ range $queueName, $ct := $Worker.Queues }}
                 {{ $ct }}x<tt>{{ $queueName }}</tt>
@@ -75,7 +83,7 @@ var mainPageTpl = `
   <div class="col-md-12">
 
     <h3>{{ len .RunningJobs }} of {{ .TotalThreads }} Threads Working</h3>
-    <table class="table">
+    <table class="table sortable">
       <thead>
         <tr>
           <th>Thread Name</th>

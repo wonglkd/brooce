@@ -128,6 +128,8 @@ func runner(thread config.ThreadType) {
 			continue
 		}
 
+		heartbeat.RunningCounter += 1
+
 		var exitCode int
 		task, err := tasklib.NewFromJson(taskStr, thread.Queue)
 		if err != nil {
@@ -187,6 +189,9 @@ func runner(thread config.ThreadType) {
 			}
 
 			pipe.LPop(thread.WorkingList())
+
+			heartbeat.RunningCounter -= 1
+
 			return nil
 		})
 

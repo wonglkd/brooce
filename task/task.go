@@ -26,6 +26,7 @@ type Task struct {
 	StartTime int64  `json:"start_time,omitempty"`
 	EndTime   int64  `json:"end_time,omitempty"`
 	Cron      string `json:"cron,omitempty"`
+	ToKill	  bool   `json:"tokill,omitempty"`
 
 	Raw      string `json:"-"`
 	RedisKey string `json:"-"`

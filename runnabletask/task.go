@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"sync"
 	"syscall"
@@ -27,6 +28,21 @@ type RunnableTask struct {
 	buffer     *bytes.Buffer
 	bufferLock sync.Mutex
 	running    bool
+	Pid        int
+}
+
+// exists returns whether the given file or directory exists
+func exists(path string) (bool, error) {
+    _, err := os.Stat(path)
+    if err == nil { return true, nil }
+    if os.IsNotExist(err) { return false, nil }
+    return false, err
+}
+
+
+func KillFileExists() bool {
+	v, _ := exists(config.BrooceConfigDir + "/killall")
+	return v
 }
 
 func (task *RunnableTask) Run() (exitCode int, err error) {
@@ -78,7 +94,7 @@ func (task *RunnableTask) Run() (exitCode int, err error) {
 		task.StopFlushingLog()
 	}()
 
-	task.WriteLog(fmt.Sprintf("\n\n*** COMMAND:[%s] STARTED_AT:[%s] WORKER_THREAD:[%s] QUEUE:[%s]\n",
+	task.WriteLog(fmt.Sprintf("\n\n*** COMMAND:[%s]\n STARTED_AT:[%s] WORKER_THREAD:[%s] QUEUE:[%s]\n",
 		task.Command,
 		starttime.Format(tsFormat),
 		task.WorkerThreadName(),
@@ -99,8 +115,23 @@ func (task *RunnableTask) Run() (exitCode int, err error) {
 		return
 	}
 
+	task.Pid = cmd.Process.Pid
+	task.WriteLog(fmt.Sprintf("\n*** PID: [%d]\n", task.Pid))
+
 	go func() {
 		done <- cmd.Wait()
+	}()
+
+	go func() {
+		for task.running {
+			if task.ToKill || KillFileExists() {
+				syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+				done <- fmt.Errorf("killed on command")
+				return
+			}
+			time.Sleep(5 * time.Second)
+			// Check if to kill has been set
+		}
 	}()
 
 	timeout := task.TimeoutDuration()

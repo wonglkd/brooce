@@ -15,7 +15,7 @@ var headerTpl = `
     <title>Brooce Job Queue</title>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous" />
-
+    
     <style>
       div.header {
         margin: 0.5em 0 1em 0;
@@ -99,6 +99,8 @@ var headerTpl = `
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+    <script src="https://cdn.jsdelivr.net/npm/sorttable@1.0.2/sorttable.js"></script>
 
   </head>
   <body>

@@ -71,7 +71,7 @@ var jobListTpl = `
             </td>
             <td class="buttons">
               {{ if .HasLog }}
-                <a href="{{BasePath}}/showlog/{{ .Id }}" target="_new" class="btn btn-info btn-xs">
+                <a href="{{BasePath}}/showlog/{{ .Id }}/{{ $.ListType }}/{{ $.QueueName }}" target="_new" class="btn btn-info btn-xs">
                   <span class="glyphicon glyphicon-align-justify"></span>
                   Show Log
                 </a>

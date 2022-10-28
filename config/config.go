@@ -183,7 +183,8 @@ func initDefaultConfig() {
 	}
 
 	if Config.ProcName == "" {
-		Config.ProcName = fmt.Sprintf("%v-%v", myip.PublicIPv4(), os.Getpid())
+		Config.ProcName = fmt.Sprintf("%v-%v", myip.Hostname(), os.Getpid())
+		// Config.ProcName = fmt.Sprintf("%v-%v", myip.PublicIPv4(), os.Getpid())
 	}
 
 	if !Config.Web.Disable {

@@ -73,7 +73,7 @@ func joblistQueryParams(rq string) (page int) {
 }
 
 func joblistPerPage(req *http.Request) (perpage int64) {
-	perpage = 10
+	perpage = 20
 
 	perpageCookie, err := req.Cookie("perpage")
 	if err != nil {
@@ -81,8 +81,8 @@ func joblistPerPage(req *http.Request) (perpage int64) {
 	}
 
 	perpage, _ = strconv.ParseInt(perpageCookie.Value, 10, 0)
-	if perpage < 1 || perpage > 100 {
-		perpage = 10
+	if perpage < 1 || perpage > 500 {
+		perpage = 20
 	}
 
 	return
