@@ -14,6 +14,7 @@ import (
 )
 
 var BrooceConfigDir = os.Getenv("BROOCE_CONFIGDIR")
+var BrooceConfigFile = os.Getenv("BROOCE_CONFIGFILE")
 var BrooceLogDir = os.Getenv("BROOCE_LOGDIR")
 
 type ConfigType struct {
@@ -108,7 +109,7 @@ func init() {
 
 	initDefaultDirs()
 
-	configFile := filepath.Join(BrooceConfigDir, "brooce.conf")
+	configFile := filepath.Join(BrooceConfigDir, BrooceConfigFile)
 	bytes, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.Println("Unable to read config file", configFile, "so using defaults!")
@@ -154,6 +155,10 @@ func initDefaultDirs() {
 		if err != nil {
 			log.Fatalln("Unable to create directory", BrooceConfigDir, ":", err)
 		}
+	}
+
+	if BrooceConfigFile == "" {
+		BrooceConfigFile = "brooce.conf"
 	}
 
 	if BrooceLogDir == "" {
