@@ -2,3 +2,7 @@ brooce
 brooce-cluster
 test/
 dump.rdb
+*.swp
+pkg/
+vendor/
+bin/
