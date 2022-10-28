@@ -27,7 +27,7 @@ var serv = &http.Server{
 	Addr:         config.Config.Web.Addr,
 	Handler:      reqHandler,
 	ReadTimeout:  10 * time.Second,
-	WriteTimeout: 10 * time.Second,
+	WriteTimeout: 120 * time.Second,
 }
 
 var webLogWriter *os.File
