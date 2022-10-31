@@ -103,6 +103,11 @@ func runner(thread config.ThreadType) {
 			return
 		}
 
+		// Wait till CPU / memory usage is < 90%.
+		for heartbeat.HighLoad() {
+			time.Sleep(time.Duration(30) * time.Second)
+		}
+
 		taskStr, err := redisClient.BRPopLPush(thread.PendingList(), thread.WorkingList(), 15*time.Second).Result()
 		if err != nil {
 			if err != redis.Nil {
