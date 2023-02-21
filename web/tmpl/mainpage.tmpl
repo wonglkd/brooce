@@ -74,53 +74,5 @@
   </div>
 </div>
 
-
-
-<div class="row">
-  <div class="col-md-12">
-
-    <h3>{{ len .RunningJobs }} of {{ .TotalThreads }} Threads Working</h3>
-    <table class="table sortable">
-      <thead>
-        <tr>
-          <th>Thread Name</th>
-          <th>Queue</th>
-          <th>Started</th>
-          <th>Command</th>
-          <th>Params</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {{ range .RunningJobs }}
-          <tr>
-            <td>{{ .WorkerThreadName }}</td>
-            <td>{{ .QueueName }}</td>
-            <td class="nowrap"><span title="{{FormatTime .StartTime}}">{{ TimeSince .StartTime }}</span></td>
-            <td class="wrap"><code>{{ .Command }}</code></td>
-            <td class="params">
-              <ul>
-                {{ if .Timeout }} <li>Timeout: {{ TimeDuration .Timeout }} {{ end }}
-                {{ if gt .MaxTries 1 }} <li>Max Tries: {{ .MaxTries }} {{ end }}
-                {{ if .Cron }} <li>Cron: {{ .Cron }} {{ end }}
-                {{ if .Locks }} <li>Locks: {{ Join .Locks ", " }} {{ end }}
-              </ul>
-            </td>
-
-            <td class="buttons">
-              {{ if .HasLog }}
-                <a href="{{BasePath}}/showlog/{{ .Id }}" target="_new" class="btn btn-info btn-xs">
-                  <span class="glyphicon glyphicon-align-justify"></span>
-                  Show Log
-                </a>
-              {{ end }}
-            </td>
-          </tr>
-        {{ end }}
-      </tbody>
-    </table>
-
-  </div>
-</div>
 {{ template "footer" }}
 {{ end }}

@@ -49,6 +49,7 @@ func Start() {
 	basePath := config.Config.Web.BasePath
 
 	reqHandler.HandleFunc(basePath+"/", makeHandler(mainpageHandler, "GET"))
+	reqHandler.HandleFunc(basePath+"/working/", makeHandler(workingHandler, "GET"))
 
 	reqHandler.HandleFunc(basePath+"/failed/", makeHandler(joblistHandler, "GET"))
 	reqHandler.HandleFunc(basePath+"/done/", makeHandler(joblistHandler, "GET"))

@@ -107,6 +107,7 @@
     <ul class="nav nav-pills pull-right">
 
       <li {{ if eq . "overview" }}class="active"{{ end }}><a href="{{BasePath}}/" accesskey="o" title="Alt+O">Overview</a></li>
+      <li {{ if eq . "working" }}class="active"{{ end }}><a href="{{BasePath}}/working" accesskey="w" title="Alt+W">Working Jobs</a></li>
       <li {{ if eq . "cron" }}class="active"{{ end }}><a href="{{BasePath}}/cron" accesskey="j" title="Alt+J">Cron Jobs</a></li>
     </ul>
 
