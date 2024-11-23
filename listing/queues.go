@@ -80,7 +80,7 @@ func Queues(short bool) (queueHash map[string]*QueueInfoType, err error) {
 	}
 
 	var jobs []*task.Task
-	jobs, err = RunningJobs(true)
+	jobs, err = RunningJobs(true, "*", "*")
 	if err != nil {
 		return
 	}

@@ -25,6 +25,7 @@ type JobOptions struct {
 	NoRedisLogOnFail_           *bool `json:"noredislogonfail,omitempty"`
 	RedisLogExpireAfter_        *int  `json:"redislogexpireafter,omitempty"`
 	RedisLogFailedExpireAfter_  *int  `json:"redislogfailedexpireafter,omitempty"`
+	RedisLogListDoneMaxLen_     *int  `json:"redisloglistdonemaxlen,omitempty"`
 	RedisListDoneExpireAfter_   *int  `json:"redislistdoneexpireafter,omitempty"`
 	RedisListFailedExpireAfter_ *int  `json:"redislistfailedexpireafter,omitempty"`
 
@@ -128,6 +129,13 @@ func (j *JobOptions) RedisLogExpireAfter() int {
 func (j *JobOptions) RedisLogFailedExpireAfter() int {
 	if j.RedisLogFailedExpireAfter_ != nil && *j.RedisLogFailedExpireAfter_ > 0 {
 		return *j.RedisLogFailedExpireAfter_
+	}
+	return 0
+}
+
+func (j *JobOptions) RedisLogListDoneMaxLen() int {
+	if j.RedisLogListDoneMaxLen_ != nil && *j.RedisLogListDoneMaxLen_ > 0 {
+		return *j.RedisLogListDoneMaxLen_
 	}
 	return 0
 }

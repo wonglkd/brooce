@@ -84,7 +84,7 @@ func FlushList(src, dst string) error {
 func ScanKeys(match string) (keys []string, err error) {
 	redisClient := Get()
 
-	iter := redisClient.Scan(0, match, 10000).Iterator()
+	iter := redisClient.Scan(0, match, 1000).Iterator()
 	for iter.Next() {
 		keys = append(keys, iter.Val())
 	}

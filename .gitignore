@@ -6,3 +6,4 @@ dump.rdb
 pkg/
 vendor/
 bin/
+.nfs*

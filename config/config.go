@@ -36,6 +36,9 @@ type ConfigType struct {
 		Disable  bool   `json:"disable"`
 	} `json:"web"`
 
+	NoPrune    bool   `json:"noprune"`
+	Master	   bool   `json:"master"`
+
 	FileOutputLog struct {
 		Enable bool `json:"enable"`
 	} `json:"file_output_log"`
@@ -127,6 +130,7 @@ func init() {
 	if BrooceLogDir != "" {
 		log.Println("LogDir:", BrooceLogDir)
 	}
+	log.Println("ConfigFile:", configFile)
 
 	initDefaultJobOptions()
 	initDefaultConfig()

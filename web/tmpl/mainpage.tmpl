@@ -21,7 +21,7 @@
             <td class="queuename">{{ $Queue.Name }}</td>
             <td class="queuenum">{{ $Queue.Threads }}</td>
             <td class="queuenum"><a href="{{BasePath}}/pending/{{ $Queue.Name }}">{{ $Queue.Pending }}</a></td>
-            <td class="queuenum">{{ $Queue.Running }}</td>
+            <td class="queuenum"><a href="{{BasePath}}/working/{{ $Queue.Name }}">{{ $Queue.Running }}</a></td>
             <td class="queuenum"><a href="{{BasePath}}/done/{{ $Queue.Name }}">{{ $Queue.Done }}</a></td>
             <td class="queuenum"><a href="{{BasePath}}/failed/{{ $Queue.Name }}">{{ $Queue.Failed }}</a></td>
             <td class="queuenum"><a href="{{BasePath}}/delayed/{{ $Queue.Name }}">{{ $Queue.Delayed }}</a></td>
@@ -36,7 +36,7 @@
 
 <div class="row">
   <div class="col-md-12">
-    <h3>{{ len .RunningWorkers }} Workers Alive</h3>
+    <h3>{{ .TotalActiveWorkers }} of {{ len .RunningWorkers }} Alive Workers Active ({{ Minus (len .RunningWorkers) .TotalActiveWorkers }} Idle)</h3>
     <table class="table sortable">
       <thead>
         <tr>
@@ -49,15 +49,17 @@
           <th>Process ID</th>
           <th>HighLoad</th>
           <th>Queues</th>
+          <th>Config / BinHash</th>
+          <th>Start</th>
         </tr>
       </thead>
       <tbody>
         {{ range $i, $Worker := .RunningWorkers }}
           <tr>
             <td>{{ $Worker.ProcName }}</td>
-            <td>{{ $Worker.Hostname }}</td>
+            <td sorttable_customkey="{{ ReverseDomain $Worker.Hostname }}">{{ $Worker.HostnameShort }}</td>
             <td>{{ $Worker.IP }}</td>
-            <td>{{ $Worker.Running }}</td>
+            <td><a href="{{BasePath}}/working/*/{{ $Worker.ProcName }}">{{ $Worker.Running }}</a></td>
             <td>{{ $Worker.MemUsage }}%</td>
             <td>{{ $Worker.CpuUsage }}%</td>
             <td>{{ $Worker.PID }}</td>
@@ -67,6 +69,8 @@
                 {{ $ct }}x<tt>{{ $queueName }}</tt>
               {{ end }}
             </td>
+            <td>{{ $Worker.ConfigFile }} {{ $Worker.BinHash }}</td>
+            <td sorttable_customkey="{{FormatTime .WorkerStartTime}}"><span title="Started: {{$Worker.WorkerStartTime}}, HB Age: {{ TimeSince $Worker.Timestamp }}">{{ TimeSince $Worker.WorkerStartTime }}</span></td>
           </tr>
         {{ end }}
       </tbody>

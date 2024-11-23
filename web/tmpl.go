@@ -46,6 +46,16 @@ func makeTemplate() *template.Template {
 
 			return util.HumanDuration(time.Unix(end, 0).Sub(time.Unix(start, 0)), 1)
 		},
+		"TimeBetweenSecs": func(start, end int64) int64 {
+			if start == 0 || end == 0 {
+				return 0
+			}
+			if start > end {
+				start, end = end, start
+			}
+
+			return int64(time.Unix(end, 0).Sub(time.Unix(start, 0)).Seconds())
+		},
 		"TimeDuration": func(seconds int) string {
 			if seconds == 0 {
 				return ""
@@ -63,6 +73,10 @@ func makeTemplate() *template.Template {
 		},
 		"Join": func(slice []string, connector string) string {
 			return strings.Join(slice, connector)
+		},
+		"ReverseDomain": util.ReverseDomain,
+		"Minus": func(a, b int) int {
+			return a - b
 		},
 	})
 

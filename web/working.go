@@ -12,15 +12,30 @@ type workingOutputType struct {
 	RunningJobs    []*task.Task
 	RunningWorkers []*heartbeat.HeartbeatType
 	TotalThreads   int
+	QueueName      string
+	Query          string
 }
 
 func workingHandler(req *http.Request, rep *httpReply) (err error) {
+	path := splitUrlPath(req.URL.Path)
 	output := &workingOutputType{}
 
-	output.RunningJobs, err = listing.RunningJobs(true)
+	queueName := "*"
+	if len(path) >= 2 {
+		queueName = path[1]
+	}
+	output.QueueName = queueName
+
+	workerName := "*"
+	if len(path) >= 3 {
+		workerName = path[2]
+	}
+
+	output.RunningJobs, err = listing.RunningJobs(false, queueName, workerName)
 	if err != nil {
 		return
 	}
+
 	output.RunningWorkers, err = listing.RunningWorkers()
 	if err != nil {
 		return

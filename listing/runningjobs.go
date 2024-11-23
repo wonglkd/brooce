@@ -1,6 +1,8 @@
 package listing
 
 import (
+	"sort"
+
 	"brooce/config"
 	"brooce/heartbeat"
 	myredis "brooce/redis"
@@ -17,7 +19,7 @@ var redisHeader = config.Config.ClusterName
 // from worker heartbeat data
 // this is much faster, but the prune functions still need
 // the true list to find any zombie working lists
-func RunningJobs(fast bool) (jobs []*task.Task, err error) {
+func RunningJobs(fast bool, queue string, workerName string) (jobs []*task.Task, err error) {
 	jobs = []*task.Task{}
 
 	var keys []string
@@ -37,7 +39,8 @@ func RunningJobs(fast bool) (jobs []*task.Task, err error) {
 		}
 
 	} else {
-		keys, err = myredis.ScanKeys(redisHeader + ":queue:*:working:*")
+		// brooce:queue:par4:working:node-35.cache-wf-64-3-19647-par4-0
+		keys, err = myredis.ScanKeys(redisHeader + ":queue:" + queue + ":working:" + workerName + "*")
 		if err != nil {
 			return
 		}
@@ -50,6 +53,8 @@ func RunningJobs(fast bool) (jobs []*task.Task, err error) {
 	values := make([]*redis.StringCmd, len(keys))
 	_, err = redisClient.Pipelined(func(pipe redis.Pipeliner) error {
 		for i, key := range keys {
+			// LIndex is O(N) for items in the middle of the list, but these
+			// working lists are generally one element long.
 			values[i] = pipe.LIndex(key, 0)
 		}
 		return nil
@@ -74,6 +79,10 @@ func RunningJobs(fast bool) (jobs []*task.Task, err error) {
 		job.RedisKey = keys[i]
 		jobs = append(jobs, job)
 	}
+
+	sort.Slice(jobs, func(i, j int) bool {
+		return jobs[i].StartTime < jobs[j].StartTime
+	})
 
 	task.PopulateHasLog(jobs)
 	return

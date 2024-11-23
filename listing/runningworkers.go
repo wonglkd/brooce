@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"brooce/heartbeat"
+	"brooce/util"
 )
 
 func RunningWorkers() (workers []*heartbeat.HeartbeatType, err error) {
@@ -35,7 +36,7 @@ func RunningWorkers() (workers []*heartbeat.HeartbeatType, err error) {
 		if workers[i].Hostname == workers[j].Hostname {
 			return workers[i].ProcName < workers[j].ProcName
 		} else {
-			return workers[i].Hostname < workers[j].Hostname
+			return util.ReverseDomain(workers[i].Hostname) < util.ReverseDomain(workers[j].Hostname)
 		}
 	})
 

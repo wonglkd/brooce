@@ -4,6 +4,22 @@
   <div class="col-md-12">
 
     <h3>{{ len .RunningJobs }} of {{ .TotalThreads }} Threads Working</h3>
+
+    <div class='row'>
+      <div class='col-sm-3'>
+        <form class="form-search" method="get" action="{{BasePath}}/search">
+          <input type="hidden" name="queue" value="{{ .QueueName }}">
+          <input type="hidden" name="listType" value="working">
+          <div class="input-group">
+          <input name="q" accesskey="s" title="Alt+S" type="text" class="form-control search-query" placeholder="Search in jobs" value="{{ .Query }}">
+            <div class="input-group-btn">
+              <button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-search"></i></button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <table class="table sortable">
       <thead>
         <tr>
@@ -20,14 +36,15 @@
           <tr>
             <td>{{ .WorkerThreadName }}</td>
             <td>{{ .QueueName }}</td>
-            <td class="nowrap"><span title="{{FormatTime .StartTime}}">{{ TimeSince .StartTime }}</span></td>
+            <td class="nowrap" sorttable_customkey="{{FormatTime .StartTime}}"><span title="{{FormatTime .StartTime}}">{{ TimeSince .StartTime }}</span></td>
             <td class="wrap"><code>{{ .Command }}</code></td>
-            <td class="params">
+            <td class="wrap params">
               <ul>
-                {{ if .Timeout }} <li>Timeout: {{ TimeDuration .Timeout }} {{ end }}
-                {{ if gt .MaxTries 1 }} <li>Max Tries: {{ .MaxTries }} {{ end }}
-                {{ if .Cron }} <li>Cron: {{ .Cron }} {{ end }}
-                {{ if .Locks }} <li>Locks: {{ Join .Locks ", " }} {{ end }}
+                {{ if .Timeout }} <li>Timeout: {{ TimeDuration .Timeout }}</li> {{ end }}
+                {{ if gt .MaxTries 1 }} <li>Max Tries: {{ .MaxTries }}</li> {{ end }}
+                {{ if .Cron }} <li>Cron: {{ .Cron }}</li> {{ end }}
+                <li><details><summary>Job Id:</summary> {{ .Id }}</details></li>
+                {{ if .Locks }} <li><details><summary>Locks ({{ len .Locks }}):</summary> {{ Join .Locks ", " }}</details></li> {{ end }}
               </ul>
             </td>
 

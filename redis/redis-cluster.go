@@ -61,7 +61,7 @@ func ScanKeys(match string) (keys []string, err error) {
 	redisClient := Get()
 
 	err = redisClient.ForEachMaster(func(client *redis.Client) error {
-		iter := client.Scan(0, match, 10000).Iterator()
+		iter := client.Scan(0, match, 1000).Iterator()
 		for iter.Next() {
 			keys = append(keys, iter.Val())
 		}

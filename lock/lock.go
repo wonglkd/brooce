@@ -68,6 +68,10 @@ func Start() {
 		log.Fatalln("redis error:", err)
 	}
 
+	if !config.Config.Master {
+		return
+	}
+
 	go func() {
 		for {
 			err = cleanupAll()

@@ -70,12 +70,17 @@ func Start() {
 	reqHandler.HandleFunc(basePath+"/delete/delayed/", makeHandler(deleteHandler, "POST"))
 	reqHandler.HandleFunc(basePath+"/delete/pending/", makeHandler(deleteHandler, "POST"))
 
+	reqHandler.HandleFunc(basePath+"/deleteallwithlogs/failed/", makeHandler(deleteAllWithLogsHandler, "POST"))
+	reqHandler.HandleFunc(basePath+"/deleteallwithlogs/done/", makeHandler(deleteAllWithLogsHandler, "POST"))
+	reqHandler.HandleFunc(basePath+"/deleteallwithlogs/delayed/", makeHandler(deleteAllWithLogsHandler, "POST"))
+	reqHandler.HandleFunc(basePath+"/deleteallwithlogs/pending/", makeHandler(deleteAllWithLogsHandler, "POST"))
+
 	reqHandler.HandleFunc(basePath+"/deleteall/failed/", makeHandler(deleteAllHandler, "POST"))
 	reqHandler.HandleFunc(basePath+"/deleteall/done/", makeHandler(deleteAllHandler, "POST"))
 	reqHandler.HandleFunc(basePath+"/deleteall/delayed/", makeHandler(deleteAllHandler, "POST"))
 	reqHandler.HandleFunc(basePath+"/deleteall/pending/", makeHandler(deleteAllHandler, "POST"))
 
-	reqHandler.HandleFunc(basePath+"/showlog/", makeHandler(showlogHandler, "GET"))
+	reqHandler.HandleFunc(basePath+"/showlog/", makeHandler(showlogHandler, "GET|POST"))
 
 	reqHandler.HandleFunc(basePath+"/cron", makeHandler(cronpageHandler, "GET"))
 	//reqHandler.HandleFunc(basePath + "/savecron", makeHandler(saveCronHandler, "POST"))
@@ -127,7 +132,7 @@ func makeHandler(fn httpHandler, method string) http.HandlerFunc {
 		}
 
 		var err error
-		if method == req.Method {
+		if method == req.Method || (method == "GET|POST" && (req.Method == "GET" || req.Method == "POST")) {
 			err = allMiddleware(fn)(req, rep)
 		} else {
 			rep.statusCode = http.StatusNotFound
