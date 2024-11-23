@@ -28,7 +28,7 @@ func Start() {
 
 			err = prunequeues()
 			if err != nil {
-				log.Println("Error while pruning queues:", err)
+				log.Println("aError while pruning queues:", err)
 			}
 
 			time.Sleep(time.Minute)
@@ -42,7 +42,7 @@ func prunejobs() error {
 		return err
 	}
 
-	jobs, err := listing.RunningJobs(false)
+	jobs, err := listing.RunningJobs(false, "*", "*")
 	if err != nil {
 		return err
 	}
@@ -90,6 +90,11 @@ func prunequeues() error {
 		}
 
 		err = expireList(q.FailedList(), opts.RedisListFailedExpireAfter())
+		if err != nil {
+			return err
+		}
+
+		err = pruneListMaxLen(q.DoneList(), opts.RedisLogListDoneMaxLen())
 		if err != nil {
 			return err
 		}
@@ -152,6 +157,39 @@ func expireList(list string, expire int) error {
 		}
 	}
 
+	return nil
+}
+
+func pruneListMaxLen(list string, maxLen int) error {
+	if maxLen == 0 {
+		return nil
+	}
+	queueName := task.QueueNameFromRedisKey(list)
+
+	jobs, err := redisClient.LRange(list, int64(maxLen), -1).Result()
+	if err != nil {
+		return err
+	}
+	removed := 0
+	tasks := make([]*task.Task, len(jobs))
+	for i, value := range jobs {
+		job, err := task.NewFromJson(value, queueName)
+		if err != nil {
+			continue
+		}
+		tasks[i] = job
+	}
+	task.PopulateHasLog(tasks)
+	for _, job := range tasks {
+		if job.HasLog {
+			redisClient.Del(job.LogKey())
+			removed += 1
+		}
+	}
+
+	if removed > 0 {
+		log.Println("Pruning logs of done working queue", list, "; ", removed, "job logs removed")
+	}
 	return nil
 }
 

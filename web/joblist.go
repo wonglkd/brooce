@@ -81,7 +81,10 @@ func joblistPerPage(req *http.Request) (perpage int64) {
 	}
 
 	perpage, _ = strconv.ParseInt(perpageCookie.Value, 10, 0)
-	if perpage < 1 || perpage > 500 {
+	if perpage > 2000 {
+		perpage = 2000
+	}
+	if perpage < 1 {
 		perpage = 20
 	}
 

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"brooce/config"
@@ -62,7 +63,12 @@ func main() {
 	heartbeat.Start()
 	web.Start()
 	cronsched.Start()
-	prune.Start()
+	if config.Config.NoPrune {
+		log.Println("Pruning disabled!")
+	} else {
+		log.Println("Pruning enabled")
+		prune.Start()
+	}
 	requeue.Start()
 	suicide.Start()
 	lock.Start()
@@ -71,6 +77,8 @@ func main() {
 	for _, thread := range config.Threads {
 		threadWg.Add(1)
 		go runner(thread)
+		// Stagger starting of threads.
+		time.Sleep(time.Duration(5) * time.Second)
 	}
 
 	if len(config.Threads) > 0 {
@@ -83,6 +91,24 @@ func main() {
 	log.Println("Shutdown requested! Waiting for all threads to finish (repeat signal to skip)..")
 	threadWg.Wait()
 	log.Println("Exiting..")
+}
+
+func correctListLength(fromList string, toList string, maxLen int64) bool {
+	// thread.WorkingList() should have 1 item now
+	// if it has less or more, something went wrong!
+	length := redisClient.LLen(fromList)
+	if length.Err() != nil {
+		log.Println("Error while checking length of", fromList, ":", length.Err())
+		return true
+	}
+	if length.Val() > maxLen {
+		log.Println(fromList, "should have length ", maxLen, " but has length", length.Val(), "! It'll be flushed to", toList)
+		if err := myredis.FlushList(fromList, toList); err != nil {
+			log.Println("Error while flushing", fromList, "to", toList, ":", err)
+		}
+		return true
+	}
+	return false
 }
 
 func runner(thread config.ThreadType) {
@@ -103,7 +129,27 @@ func runner(thread config.ThreadType) {
 			return
 		}
 
-		taskStr, err := redisClient.BRPopLPush(thread.PendingList(), thread.WorkingList(), 15*time.Second).Result()
+		// We should not be working on anything right now. Correct before we wait.
+		if correctListLength(thread.WorkingList(), thread.PendingList(), 0) {
+			continue
+		}
+
+		// Wait till CPU / memory usage is < 90%.
+		if heartbeat.HighLoad() {
+			log.Println("Waiting till we are no longer under HighLoad:", thread.Queue, thread.Id)
+		}
+		for heartbeat.HighLoad() {
+			time.Sleep(time.Duration(30) * time.Second)
+		}
+		// If there are running jobs on this host, sleep to give other workers a chance to pick them up
+		// Simple attempt at load balancing
+		waitTimeout := 15 * time.Second
+		if atomic.LoadInt64(&heartbeat.RunningCounter) > 0 {
+			time.Sleep(time.Duration(60) * time.Second)
+			waitTimeout = 5 * time.Second
+		}
+
+		taskStr, err := redisClient.BRPopLPush(thread.PendingList(), thread.WorkingList(), waitTimeout).Result()
 		if err != nil {
 			if err != redis.Nil {
 				log.Println("redis error while running BRPOPLPUSH:", err)
@@ -111,24 +157,11 @@ func runner(thread config.ThreadType) {
 			continue
 		}
 
-		// thread.WorkingList() should have 1 item now
-		// if it has less or more, something went wrong!
-		length := redisClient.LLen(thread.WorkingList())
-		if length.Err() != nil {
-			log.Println("Error while checking length of", thread.WorkingList(), ":", err)
-			continue
-		}
-		if length.Val() != 1 {
-			log.Println(thread.WorkingList(), "should have length 1 but has length", length.Val(), "! It'll be flushed to", thread.PendingList())
-
-			err = myredis.FlushList(thread.WorkingList(), thread.PendingList())
-			if err != nil {
-				log.Println("Error while flushing", thread.WorkingList(), "to", thread.PendingList(), ":", err)
-			}
+		if correctListLength(thread.WorkingList(), thread.PendingList(), 1) {
 			continue
 		}
 
-		heartbeat.RunningCounter += 1
+		atomic.AddInt64(&heartbeat.RunningCounter, 1)
 
 		var exitCode int
 		task, err := tasklib.NewFromJson(taskStr, thread.Queue)
@@ -160,7 +193,8 @@ func runner(thread config.ThreadType) {
 
 			} else if (err != nil || exitCode != 0) && !task.NoFail() {
 				// FAILED
-				if task.MaxTries() > task.Tried {
+				if task.MaxTries() > task.Tried && exitCode != 65 {
+					// Designate error code 65 for do not retry (EX_DATAERR in Unix).
 					pipe.LPush(thread.DelayedList(), task.Json())
 				} else {
 					if task.RedisLogFailedExpireAfter() > 0 {
@@ -183,6 +217,8 @@ func runner(thread config.ThreadType) {
 					pipe.LPush(thread.DoneList(), task.Json())
 				}
 
+				pipe.Expire(task.LogKey(), time.Duration(48)*time.Hour)
+
 				if task.NoRedisLogOnSuccess() && task.LogKey() != "" {
 					pipe.Del(task.LogKey())
 				}
@@ -190,7 +226,7 @@ func runner(thread config.ThreadType) {
 
 			pipe.LPop(thread.WorkingList())
 
-			heartbeat.RunningCounter -= 1
+			atomic.AddInt64(&heartbeat.RunningCounter, -1)
 
 			return nil
 		})

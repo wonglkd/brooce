@@ -36,12 +36,16 @@ type ConfigType struct {
 		Disable  bool   `json:"disable"`
 	} `json:"web"`
 
+	NoPrune    bool   `json:"noprune"`
+	Master	   bool   `json:"master"`
+
 	FileOutputLog struct {
 		Enable bool `json:"enable"`
 	} `json:"file_output_log"`
 
 	Redis struct {
 		Host     string `json:"host"`
+		Socket   string `json:"socket"`
 		Password string `json:"password"`
 		DB       int    `json:"db"`
 	} `json:"redis"`
@@ -126,6 +130,7 @@ func init() {
 	if BrooceLogDir != "" {
 		log.Println("LogDir:", BrooceLogDir)
 	}
+	log.Println("ConfigFile:", configFile)
 
 	initDefaultJobOptions()
 	initDefaultConfig()
@@ -196,6 +201,11 @@ func initDefaultConfig() {
 			Config.Web.Username = "admin"
 			Config.Web.Password = util.RandomString(8)
 			log.Printf("You didn't specify a web username/password, so we generated these: %s/%s", Config.Web.Username, Config.Web.Password)
+		}
+
+		if Config.Web.BasePath != "" {
+			Config.Web.BasePath = strings.Trim(Config.Web.BasePath, "/")
+			Config.Web.BasePath = "/" + Config.Web.BasePath
 		}
 
 		Config.Web.CertFile = cleanpath(Config.Web.CertFile)

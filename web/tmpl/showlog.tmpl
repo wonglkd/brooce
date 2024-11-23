@@ -1,0 +1,25 @@
+{{ define "showlog" }}
+{{ template "header" "" }}
+
+
+ {{ if eq $.ListType "failed" "delayed" "done" }}
+ <form action="" method="post">
+   <input type="hidden" name="csrf" value="{{CSRF}}">
+   <input type="hidden" name="item" value="{{$.Raw}}">
+   <input type="hidden" name="clicked" value="retry">
+   <button type="submit" formaction="{{BasePath}}/retry/{{ $.ListType }}/{{ $.QueueName }}" target="_new" class="btn btn-warning btn-xs" {{ if eq $.Raw "TODO" }} disabled {{ end }}>
+     <span class="glyphicon glyphicon-repeat"></span>
+     Retry   </button>
+</form>
+{{ end }}
+
+<div class="row">
+  <div class="col-md-12">
+    <pre>{{$.Log}}</pre>
+  </div>
+</div>
+<script>
+document.body.onload = function() { $('pre').scrollTop = $('pre').scrollHeight; }
+</script>
+{{ template "footer" }}
+{{ end }}

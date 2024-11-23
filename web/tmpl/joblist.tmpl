@@ -1,6 +1,3 @@
-package tpl
-
-var jobListTpl = `
 {{ define "joblist" }}
 {{ template "header" "" }}
 
@@ -22,13 +19,43 @@ var jobListTpl = `
       </div>
     </div>
 
-    <h3>{{ .ListType }} jobs for queue {{ .QueueName }}</h3>
-    <table class="table table-hover">
+    <div class="pages">
+      <i>
+        Showing results
+        <a title="Set Results Per Page" href="#" class="setresults-link">{{ .Start }}-{{ .End }}</a> 
+        of {{ .Length }}
+        </a>
+      </i>
+      
+      {{ if lt $.Page 2 }}
+        <span class="prevnext">&#8606; First</span>
+        <span class="prevnext">&#10235; Prev</span>
+      {{ else }}
+        <a class="prevnext prev-link" href="?{{ $.LinkParamsForPage 1}}" title="First">&#8606; First</a>
+        <a class="prevnext prev-link" href="?{{ $.LinkParamsForPrevPage $.Page}}" title="Left arrow">&#10235; Prev</a>
+      {{ end }}
+
+      Page {{ $.Page }} of {{ .Pages }}
+
+      {{ if eq $.Page $.Pages }}
+        <span class="prevnext">Next &#10236;</span>
+        <span class="prevnext">Last &#8608;</span>
+      {{ else }}
+        <a class="prevnext next-link" href="?{{ $.LinkParamsForNextPage $.Page}}" title="Right arrow">Next &#10236;</a>
+        <a class="prevnext prev-link" href="?{{ $.LinkParamsForPage $.Pages}}" title="Last">Last &#8608;</a>
+      {{ end }}
+    </div>
+
+    <h3>{{ .ListType }} jobs for queue {{ .QueueName }} ({{ .Length }})</h3>
+    <table class="table table-hover sortable">
       <thead>
         <tr>
           {{ if eq .ListType "done" "failed" }}
             <th>Finished</th>
             <th>Runtime</th>
+          {{ end }}
+          {{ if eq .ListType "pending" }}
+            <th>Queued</th>
           {{ end }}
 
           <th>Command</th>
@@ -44,6 +71,11 @@ var jobListTpl = `
               </button>
               {{ end }}
 
+              <button type="submit" formaction="{{BasePath}}/deleteallwithlogs/{{ .ListType }}/{{ .QueueName }}" class="btn btn-danger btn-sm">
+                <span class="glyphicon glyphicon-trash"></span>
+                Delete All + Logs
+              </button>
+
               <button type="submit" formaction="{{BasePath}}/deleteall/{{ .ListType }}/{{ .QueueName }}" class="btn btn-danger btn-sm">
                 <span class="glyphicon glyphicon-trash"></span>
                 Delete All
@@ -57,24 +89,39 @@ var jobListTpl = `
         {{ range .Jobs }}
           <tr>
             {{ if eq $.ListType "done" "failed" }}
-              <td class="nowrap"><span title="{{FormatTime .EndTime}}">{{ TimeSince .EndTime }}</span></td>
-              <td class="nowrap">{{ TimeBetween .EndTime .StartTime }}</td>
+              <td class="nowrap" sorttable_customkey="{{FormatTime .EndTime}}"><span title="{{FormatTime .EndTime}}">{{ TimeSince .EndTime }}</span></td>
+              <td class="nowrap" sorttable_customkey="{{TimeBetweenSecs .EndTime .StartTime}}">{{ TimeBetween .EndTime .StartTime }}</td>
             {{ end }}
-            <td class="wrap"><code>{{ .Command }}</code></td>
-            <td class="params">
+            {{ if eq $.ListType "pending" }}
+              <td class="nowrap" sorttable_customkey="{{FormatTime .QueueTime }}"><span title="{{ FormatTime .QueueTime }}">{{ TimeSince .QueueTime }}</span></td>
+            {{ end }}
+            <td class="wrap"><code id='{{ .Id }}'>{{ .Command }}</code></td>
+            <td class="params wrap">
               <ul>
-                {{ if .Timeout }} <li>Timeout: {{ TimeDuration .Timeout }} {{ end }}
-                {{ if gt .MaxTries 1 }} <li>Max Tries: {{ .MaxTries }} {{ end }}
-                {{ if .Cron }} <li>Cron: {{ .Cron }} {{ end }}
-                {{ if .Locks }} <li>Locks: {{ Join .Locks ", " }} {{ end }}
+                {{ if and (.QueueTime) (ne $.ListType "pending")  }} <li>Queued: <span title="{{ FormatTime .QueueTime }}">{{ TimeSince .QueueTime }}</span></li> {{ end }}
+                {{ if .Timeout }} <li>Timeout: {{ TimeDuration .Timeout }}</li> {{ end }}
+                {{ if gt .MaxTries 1 }} <li>Max Tries: {{ .MaxTries }}</li> {{ end }}
+                {{ if .KillOnDelay }} <li>KillOnDelay</li> {{ end }}
+                {{ if .Cron }} <li>Cron: {{ .Cron }}</li> {{ end }}
+
+                <li><details><summary>Job Id:</summary> {{ .Id }}</details></li>
+                {{ if .Locks }} <li><details><summary>Locks ({{ len .Locks }}):</summary> {{ Join .Locks ", " }}</details></li> {{ end }}
               </ul>
             </td>
             <td class="buttons">
               {{ if .HasLog }}
-                <a href="{{BasePath}}/showlog/{{ .Id }}/{{ $.ListType }}/{{ $.QueueName }}" target="_new" class="btn btn-info btn-xs">
+              <form action="" method="post">
+                <input type="hidden" name="csrf" value="{{CSRF}}">
+                <input type="hidden" name="item" value="{{.Raw}}">
+                <!--<a href="{{BasePath}}/showlog/{{ .Id }}/{{ $.ListType }}/{{ $.QueueName }}" target="_new" class="btn btn-info btn-xs">
                   <span class="glyphicon glyphicon-align-justify"></span>
                   Show Log
-                </a>
+                </a>-->
+                <button type="submit" formaction="{{BasePath}}/showlog/{{ .Id }}/{{ $.ListType }}/{{ $.QueueName }}" target="_new" class="btn btn-info btn-xs">
+                  <span class="glyphicon glyphicon-align-justify"></span>
+                  Show Log
+                </button>
+              </form>
               {{ end }}
 
               <form action="" method="post">
@@ -128,4 +175,3 @@ var jobListTpl = `
 
 {{ template "footer" "joblist" }}
 {{ end }}
-`

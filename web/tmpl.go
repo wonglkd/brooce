@@ -1,25 +1,19 @@
-package tpl
+package web
 
 import (
+	"brooce/config"
+	"brooce/util"
+	"embed"
 	"html/template"
 	"log"
 	"strings"
 	"time"
-
-	"brooce/config"
-	"brooce/util"
 )
 
-var tplList = []string{
-	headerTpl,
-	footerTpl,
-	mainPageTpl,
-	jobListTpl,
-	showLogTpl,
-	cronPageTpl,
-}
+//go:embed tmpl
+var templateContent embed.FS
 
-func Get() *template.Template {
+func makeTemplate() *template.Template {
 	tpl := template.New("")
 
 	tpl.Funcs(template.FuncMap{
@@ -52,6 +46,16 @@ func Get() *template.Template {
 
 			return util.HumanDuration(time.Unix(end, 0).Sub(time.Unix(start, 0)), 1)
 		},
+		"TimeBetweenSecs": func(start, end int64) int64 {
+			if start == 0 || end == 0 {
+				return 0
+			}
+			if start > end {
+				start, end = end, start
+			}
+
+			return int64(time.Unix(end, 0).Sub(time.Unix(start, 0)).Seconds())
+		},
 		"TimeDuration": func(seconds int) string {
 			if seconds == 0 {
 				return ""
@@ -70,13 +74,15 @@ func Get() *template.Template {
 		"Join": func(slice []string, connector string) string {
 			return strings.Join(slice, connector)
 		},
+		"ReverseDomain": util.ReverseDomain,
+		"Minus": func(a, b int) int {
+			return a - b
+		},
 	})
 
-	for _, tplString := range tplList {
-		_, err := tpl.Parse(tplString)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	_, err := tpl.ParseFS(templateContent, "tmpl/*.tmpl")
+	if err != nil {
+		log.Fatalln(err)
 	}
 
 	return tpl

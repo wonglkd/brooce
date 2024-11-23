@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"brooce/config"
@@ -23,19 +25,24 @@ var assumeDeadAfter = 95 * time.Second
 var redisClient = myredis.Get()
 var once sync.Once
 var highLoad = false
-var RunningCounter = 0
+var RunningCounter = int64(0)
+var workerStartTime int64
+var binHash string
 
 type HeartbeatType struct {
-	ProcName  string              `json:"procname"`
-	Hostname  string              `json:"hostname"`
-	IP        string              `json:"ip"`
-	PID       int                 `json:"pid"`
-	Timestamp int64               `json:"timestamp"`
-	Threads   []config.ThreadType `json:"threads"`
-	MemUsage  int             `json:"memusage"`
-	CpuUsage  int		  `json:"cpuusage"`
-	Running	  int   `json:"running"`
-	HighLoad  bool   `json:"highload"`
+	ProcName        string              `json:"procname"`
+	Hostname        string              `json:"hostname"`
+	IP              string              `json:"ip"`
+	PID             int                 `json:"pid"`
+	Timestamp       int64               `json:"timestamp"`
+	Threads         []config.ThreadType `json:"threads"`
+	MemUsage        int                 `json:"memusage"`
+	CpuUsage        int                 `json:"cpuusage"`
+	Running         int64               `json:"running"`
+	HighLoad        bool                `json:"highload"`
+	WorkerStartTime int64               `json:"workerstarted"`
+	ConfigFile      string              `json:"configfile"`
+	BinHash         string              `json:"binhash"`
 }
 
 func (hb *HeartbeatType) HeartbeatAge() time.Duration {
@@ -70,6 +77,11 @@ func (hb *HeartbeatType) Queues() (queues map[string]int) {
 	return
 }
 
+func (hb *HeartbeatType) HostnameShort() string {
+	// Have this be a config value
+	return strings.Replace(hb.Hostname, ".yoursubdomain.local", "", 1)
+}
+
 func makeHeartbeat() string {
 	memusage := -1
 	cpuusage := -1
@@ -88,26 +100,29 @@ func makeHeartbeat() string {
 		} else {
 			time.Sleep(time.Duration(1) * time.Second)
 			cpuafter, err := cpu.Get()
-			if err != nil {			
+			if err != nil {
 				log.Println("Error getting cpustats:", err)
 			} else {
 				total := float64(cpuafter.Total - cpubefore.Total)
-				cpuusage = int(float64(cpuafter.User - cpubefore.User) / total*100)
+				cpuusage = int(float64(cpuafter.User-cpubefore.User) / total * 100)
 			}
 		}
 	}
 	highLoad = cpuusage >= 90 || memusage >= 75
 
 	hb := &HeartbeatType{
-		ProcName:  config.Config.ProcName,
-		IP:        myip.PublicIPv4(),
-		PID:       os.Getpid(),
-		Timestamp: time.Now().Unix(),
-		Threads:   config.Threads,
-		MemUsage:  memusage,
-		CpuUsage:  cpuusage,
-		Running:   RunningCounter,
-		HighLoad:  highLoad,
+		ProcName:        config.Config.ProcName,
+		IP:              myip.PublicIPv4(),
+		PID:             os.Getpid(),
+		Timestamp:       time.Now().Unix(),
+		Threads:         config.Threads,
+		MemUsage:        memusage,
+		CpuUsage:        cpuusage,
+		Running:         atomic.LoadInt64(&RunningCounter),
+		HighLoad:        highLoad,
+		ConfigFile:      config.BrooceConfigFile,
+		WorkerStartTime: workerStartTime,
+		BinHash:         binHash,
 	}
 
 	var err error
@@ -125,6 +140,8 @@ func makeHeartbeat() string {
 }
 
 func Start() {
+	initStats()
+
 	// need to send a single heartbeat FOR SURE before we grab a job!
 	heartbeat()
 
@@ -146,4 +163,15 @@ func heartbeat() {
 
 func HighLoad() bool {
 	return highLoad
+}
+
+func initStats() {
+	workerStartTime = time.Now().Unix()
+	bytes, err := os.ReadFile("/tmp/brooce/brooce_hash")
+	if err == nil {
+		binHash = string(bytes[:7])
+		log.Println("Binary hash: ", binHash)
+	} else {
+		log.Println("Failed to get binhash: ", err)
+	}
 }
